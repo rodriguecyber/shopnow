@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: shopnow
+  labels:
+    app: shop-now
+    type: frontend
+
+spec:
+  template:
+    metadata:
+      name: frontend-pod
+      labels:
+        app: shop-now
+        type: frontend
+
+    spec: 
+      containers:
+        - name: frontend-container
+          image: 404931289118.dkr.ecr.us-east-1.amazonaws.com/shopnow-ecs/frontend:latest
+          env:
+           - name: NODE_ENV
+             value: production
+           - name: NEXT_PUBLIC_API_URL
+             value: http://shopnow-backend/api
+  replicas: 3
+  selector:
+    matchLabels:
+      app: shop-now
+      type: frontend
