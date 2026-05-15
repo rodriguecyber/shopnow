@@ -47,7 +47,7 @@ resource "aws_ecs_service" "backend" {
   name            = "${var.cluster_name}-backend"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.backend.arn
-  desired_count   = 1
+  desired_count   = 2
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -60,6 +60,10 @@ resource "aws_ecs_service" "backend" {
     target_group_arn = var.backend_tg_arn
     container_name   = "backend"
     container_port   = 5000
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.backend.arn
   }
 
   depends_on = [aws_ecs_cluster.main]

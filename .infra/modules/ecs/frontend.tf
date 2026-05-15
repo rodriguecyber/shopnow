@@ -20,6 +20,9 @@ resource "aws_ecs_task_definition" "frontend" {
 
     environment = [
       { name = "NODE_ENV",            value = "production" },
+      # Used by SSR/API routes inside the VPC (server-side only)
+      { name = "API_URL",             value = "http://backend.shopnow.local:5000/api" },
+      # Used by the browser — must point to the public ALB
       { name = "NEXT_PUBLIC_API_URL", value = "http://${var.alb_dns}/api" }
     ]
 
@@ -39,7 +42,7 @@ resource "aws_ecs_service" "frontend" {
   name            = "${var.cluster_name}-frontend"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = 1
+  desired_count   = 2
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -52,6 +55,10 @@ resource "aws_ecs_service" "frontend" {
     target_group_arn = var.frontend_tg_arn
     container_name   = "frontend"
     container_port   = 3000
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.frontend.arn
   }
 
   depends_on = [aws_ecs_cluster.main]

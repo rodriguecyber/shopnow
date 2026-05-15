@@ -24,7 +24,9 @@ spec:
              value: production
            - name: NEXT_PUBLIC_API_URL
              value: http://shopnow-backend/api
-  replicas: 3
+           - name: API_URL
+             value: http://shopnow-backend/api
+  replicas: 1
   selector:
     matchLabels:
       app: shop-now
