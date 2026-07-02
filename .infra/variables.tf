@@ -32,6 +32,7 @@ variable "db_password" {
   description = "PostgreSQL password"
   type        = string
   sensitive   = true
+  default     = "Shopnow1234"
 }
 
 variable "github_repo" {

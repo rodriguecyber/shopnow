@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  CLUSTER_NAME: shopnow-ecs # matches .infra/variables.tf cluster_name default
+  CLUSTER_NAME: shopnow-ecs 
 
 jobs:
   backend-ci:
@@ -15,6 +15,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: shopnow
+          POSTGRES_USER: shopnow_user
+          POSTGRES_PASSWORD: shopnow_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shopnow_user -d shopnow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,6 +37,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - run: npm test
       - run: npm run build
 
   frontend-ci:
@@ -46,7 +61,7 @@ jobs:
     needs: [backend-ci, frontend-ci]
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # required to mint the OIDC token for AssumeRoleWithWebIdentity
+      id-token: write 
       contents: read
     steps:
       - uses: actions/checkout@v4

@@ -120,6 +120,23 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
+### Backend Tests
+
+```bash
+cd backend
+docker-compose up -d db   # the DB connection test needs a real Postgres
+npm test
+```
+
+| File | Covers |
+|---|---|
+| `__tests__/health.test.ts` | `/health` liveness endpoint |
+| `__tests__/db.test.ts` | Real connection to Postgres via the `pg` pool |
+| `__tests__/products.routes.test.ts` | `/api/products` routes (DB + cache mocked) |
+| `__tests__/orders.routes.test.ts` | `/api/orders` routes (DB mocked) |
+
+CI runs the same suite against a `postgres:16-alpine` service container (see `.github/workflows/ci-cd.yml`).
+
 ### Frontend
 
 ```bash
