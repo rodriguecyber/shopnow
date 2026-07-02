@@ -18,7 +18,7 @@ spec:
     spec: 
       containers:
         - name: frontend-container
-          image: 404931289118.dkr.ecr.us-east-1.amazonaws.com/shopnow-ecs/frontend:latest
+          image: ${FRONTEND_IMAGE}
           env:
            - name: NODE_ENV
              value: production

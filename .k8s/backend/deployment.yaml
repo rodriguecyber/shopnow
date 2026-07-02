@@ -20,14 +20,14 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 404931289118.dkr.ecr.us-east-1.amazonaws.com/shopnow-ecs/backend:latest
+          image: ${BACKEND_IMAGE}
           ports:
             - containerPort: 5000
           env:
            - name: NODE_ENV
              value: production
            - name: DB_HOST
-             value: shopnow-ecs-postgres.cmhe8m2yylg5.us-east-1.rds.amazonaws.com
+             value: ${DB_HOST}
            - name: DB_PORT
              value: "5432"
            - name: DB_NAME
@@ -35,11 +35,14 @@ spec:
            - name: DB_USER
              value: shopnow
            - name: DB_PASSWORD
-             value: Niyongabo2006
+             valueFrom:
+               secretKeyRef:
+                 name: backend-secret
+                 key: db-password
            - name: DB_SSL
-             value: "true"
+             value: ${DB_SSL}
            - name: REDIS_HOST
-             value: shopnow-ecs-redis.scvcjh.0001.use1.cache.amazonaws.com
+             value: ${REDIS_HOST}
            - name: REDIS_PORT
              value: "6379"
            - name: PORT

@@ -414,15 +414,29 @@ NEXT_PUBLIC_API_URL=http://shopnow-backend/api   # baked at build time — set t
 
 ### Apply manifests
 
+`backend/deployment.yaml` and `frontend/deployment.yaml` reference `${BACKEND_IMAGE}`, `${FRONTEND_IMAGE}`, `${DB_HOST}`, `${REDIS_HOST}` and `${DB_SSL}` — no environment-specific values are committed. Resolve them with `envsubst` and keep the DB password in a Secret, never in the manifest.
+
 ```bash
 # 1. Configure kubectl
 aws eks update-kubeconfig --region us-east-1 --name shopnow-ecs
 
-# 2. Apply in order
+# 2. Provide the placeholder values (from `terraform output`, run inside .infra/)
+cp .k8s/.env.example .k8s/.env   # then fill in BACKEND_IMAGE, FRONTEND_IMAGE, DB_HOST, REDIS_HOST
+set -a && source .k8s/.env && set +a
+
+# 3. Apply in order
 kubectl apply -f .k8s/namespace.yaml
 kubectl apply -f .k8s/data/          # only for dev; skip for production (use RDS + ElastiCache)
-kubectl apply -f .k8s/backend/
-kubectl apply -f .k8s/frontend/
+
+# create the DB password Secret once (never commit the plaintext value)
+kubectl create secret generic backend-secret \
+  --namespace shopnow \
+  --from-literal=db-password='<your-db-password>'
+
+envsubst < .k8s/backend/deployment.yaml  | kubectl apply -f -
+kubectl apply -f .k8s/backend/service.yaml
+envsubst < .k8s/frontend/deployment.yaml | kubectl apply -f -
+kubectl apply -f .k8s/frontend/service.yaml
 kubectl apply -f .k8s/ingress.yaml
 
 # 3. Check status
