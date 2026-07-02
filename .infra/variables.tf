@@ -33,3 +33,9 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "github_repo" {
+  description = "GitHub repo allowed to assume the CI/CD role, as \"org/repo\""
+  type        = string
+  default     = "rodriguecyber/shopnow"
+}

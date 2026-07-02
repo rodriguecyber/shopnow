@@ -5,3 +5,11 @@ output "backend_url" {
 output "frontend_url" {
   value = aws_ecr_repository.frontend.repository_url
 }
+
+output "backend_arn" {
+  value = aws_ecr_repository.backend.arn
+}
+
+output "frontend_arn" {
+  value = aws_ecr_repository.frontend.arn
+}

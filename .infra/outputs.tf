@@ -27,3 +27,8 @@ output "redis_endpoint" {
   description = "ElastiCache Redis endpoint"
   value       = module.elasticache.endpoint
 }
+
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions to assume via OIDC (set as the AWS_ROLE_ARN repo secret)"
+  value       = module.github_oidc.role_arn
+}

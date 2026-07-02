@@ -16,6 +16,7 @@ A full-stack e-commerce application built with Next.js, Node.js/Express, Postgre
 - [Frontend Pages](#frontend-pages)
 - [AWS Deployment — ECS Fargate](#aws-deployment--ecs-fargate)
 - [AWS Deployment — EKS](#aws-deployment--eks)
+- [CI/CD](#cicd)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -460,6 +461,35 @@ kubectl rollout status  deployment/backend-deployment  -n shopnow
 kubectl scale deployment/backend-deployment  --replicas=5 -n shopnow
 kubectl scale deployment/frontend-deployment --replicas=3 -n shopnow
 ```
+
+---
+
+## CI/CD
+
+`.github/workflows/ci-cd.yml` runs on every PR/push to `main`:
+
+| Job | Trigger | What it does |
+|---|---|---|
+| `backend-ci` | PR + push | `npm ci` + `npm run build` (tsc) in `backend/` |
+| `frontend-ci` | PR + push | `npm ci` + `npm run lint` + `npm run build` in `frontend/` |
+| `build-and-push` | push to `main` only, after both CI jobs pass | Builds Docker images and pushes `:latest` + `:<git-sha>` tags to ECR |
+
+`build-and-push` only pushes images — it does **not** deploy. Roll out the new image with the ECS/EKS steps documented above (`terraform apply` picks up `:latest` automatically on task redeploy; for EKS, `kubectl rollout restart`).
+
+Authentication uses GitHub's OIDC provider to assume an AWS IAM role — no long-lived AWS access keys are stored in the repo. The `github-oidc` Terraform module (`.infra/modules/github-oidc/`) provisions:
+
+- an `aws_iam_openid_connect_provider` trusting `token.actions.githubusercontent.com`
+- an `aws_iam_role` that only `repo:<github_repo>:ref:refs/heads/main` can assume (see `var.github_repo` in `.infra/variables.tf`)
+- an inline policy scoped to `ecr:GetAuthorizationToken` plus push actions on just the backend/frontend ECR repos
+
+### Required repo configuration
+
+| Name | Type | Value |
+|---|---|---|
+| `AWS_ROLE_ARN` | Secret | `terraform output github_actions_role_arn` (from `.infra/`, after `terraform apply`) |
+| `AWS_REGION` | Variable (optional) | Defaults to `us-east-1` if unset |
+
+The ECR registry URL (account ID) is resolved at runtime via `aws-actions/amazon-ecr-login` from the assumed role — it is never hardcoded in the workflow.
 
 ---
 

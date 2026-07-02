@@ -14,7 +14,14 @@ module "eks" {
 module "ecr" {
   source       = "./modules/ecr"
   cluster_name = var.cluster_name
-  
+
+}
+
+module "github_oidc" {
+  source              = "./modules/github-oidc"
+  cluster_name        = var.cluster_name
+  github_repo         = var.github_repo
+  ecr_repository_arns = [module.ecr.backend_arn, module.ecr.frontend_arn]
 }
 
 module "alb" {

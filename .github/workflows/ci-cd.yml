@@ -1,0 +1,76 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  CLUSTER_NAME: shopnow-ecs # matches .infra/variables.tf cluster_name default
+
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  frontend-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  build-and-push:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend-ci, frontend-ci]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # required to mint the OIDC token for AssumeRoleWithWebIdentity
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          docker build -t "$REGISTRY/$CLUSTER_NAME/backend:$GITHUB_SHA" -t "$REGISTRY/$CLUSTER_NAME/backend:latest" ./backend
+          docker push "$REGISTRY/$CLUSTER_NAME/backend:$GITHUB_SHA"
+          docker push "$REGISTRY/$CLUSTER_NAME/backend:latest"
+
+      - name: Build and push frontend
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          docker build -t "$REGISTRY/$CLUSTER_NAME/frontend:$GITHUB_SHA" -t "$REGISTRY/$CLUSTER_NAME/frontend:latest" ./frontend
+          docker push "$REGISTRY/$CLUSTER_NAME/frontend:$GITHUB_SHA"
+          docker push "$REGISTRY/$CLUSTER_NAME/frontend:latest"
